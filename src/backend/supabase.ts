@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Auto } from '../types'
+import type { Auto, Betaler } from '../types'
 import { newId } from '../util'
 import { normaliseer, type Backend } from './types'
 
@@ -14,14 +14,54 @@ export const supabase =
 
 const BUCKET = 'fotos'
 
-type Row = { [K in keyof Auto]-?: Exclude<Auto[K], undefined> | null }
+/** Een rij in de tabel autos zoals Postgres hem teruggeeft (lege velden zijn null). */
+interface Rij {
+  id: string
+  merk: string
+  model: string
+  bouwjaar: number | null
+  kilometerstand: number | null
+  kenteken: string | null
+  status: Auto['status']
+  aankoopprijs: number
+  aankoopdatum: string
+  kosten: Auto['kosten']
+  vraagprijs: number | null
+  verkoopprijs: number | null
+  verkoopdatum: string | null
+  notities: string
+  fotos: string[]
+  betaald_door: Betaler | null
+  ontvangen_door: Betaler | null
+  verrekend: boolean
+  link: string | null
+}
 
-// Postgres geeft lege velden als null terug; de app gebruikt undefined.
-const vanRij = (r: Row): Auto =>
-  normaliseer(Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v ?? undefined])) as unknown as Auto)
+const vanRij = (r: Rij): Auto =>
+  normaliseer({
+    id: r.id,
+    merk: r.merk,
+    model: r.model,
+    bouwjaar: r.bouwjaar ?? undefined,
+    kilometerstand: r.kilometerstand ?? undefined,
+    kenteken: r.kenteken ?? undefined,
+    status: r.status,
+    aankoopprijs: Number(r.aankoopprijs),
+    aankoopdatum: r.aankoopdatum,
+    kosten: r.kosten,
+    vraagprijs: r.vraagprijs ?? undefined,
+    verkoopprijs: r.verkoopprijs ?? undefined,
+    verkoopdatum: r.verkoopdatum ?? undefined,
+    notities: r.notities,
+    fotos: r.fotos,
+    betaaldDoor: r.betaald_door ?? undefined,
+    ontvangenDoor: r.ontvangen_door ?? undefined,
+    verrekend: r.verrekend,
+    link: r.link ?? undefined,
+  })
 
 // Expliciet null meesturen zodat een leeggemaakt veld ook in de database leeg wordt.
-const naarRij = (a: Auto): Row => ({
+const naarRij = (a: Auto): Rij => ({
   id: a.id,
   merk: a.merk,
   model: a.model,
@@ -37,6 +77,10 @@ const naarRij = (a: Auto): Row => ({
   verkoopdatum: a.verkoopdatum || null,
   notities: a.notities,
   fotos: a.fotos,
+  betaald_door: a.betaaldDoor ?? null,
+  ontvangen_door: a.ontvangenDoor ?? null,
+  verrekend: a.verrekend,
+  link: a.link || null,
 })
 
 function check<T>({ data, error }: { data: T; error: { message: string } | null }): T {
@@ -52,7 +96,7 @@ export function supabaseBackend(): Backend {
     mode: 'gedeeld',
     async list() {
       const rows = check(await sb.from('autos').select('*'))
-      return (rows as Row[]).map(vanRij)
+      return (rows as Rij[]).map(vanRij)
     },
     async save(auto) {
       check(await sb.from('autos').upsert({ ...naarRij(auto), bijgewerkt_op: new Date().toISOString() }))

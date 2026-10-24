@@ -1,10 +1,11 @@
-import type { Auto, Status } from '../types'
-import { STATUS_LABELS } from '../types'
+import type { Auto } from '../types'
+import { STATUS_LABELS, STATUSSEN } from '../types'
 import { dagenInBezit, euro, geinvesteerd, winst } from '../calc'
 
 export default function Dashboard({ autos }: { autos: Auto[] }) {
   const verkocht = autos.filter((a) => a.status === 'verkocht')
-  const actief = autos.filter((a) => a.status !== 'verkocht')
+  // Auto's die we in bezit hebben; 'Op het oog' telt nog niet mee.
+  const actief = autos.filter((a) => a.status !== 'verkocht' && a.status !== 'interessant')
 
   const gerealiseerd = verkocht.reduce((s, a) => s + (winst(a) ?? 0), 0)
   const kapitaal = actief.reduce((s, a) => s + geinvesteerd(a), 0)
@@ -12,7 +13,7 @@ export default function Dashboard({ autos }: { autos: Auto[] }) {
   const gemWinst = verkocht.length ? gerealiseerd / verkocht.length : 0
   const gemDagen = verkocht.length ? verkocht.reduce((s, a) => s + dagenInBezit(a), 0) / verkocht.length : 0
 
-  const perStatus = (Object.keys(STATUS_LABELS) as Status[]).map((s) => ({
+  const perStatus = STATUSSEN.map((s) => ({
     status: s,
     aantal: autos.filter((a) => a.status === s).length,
   }))
