@@ -6,7 +6,11 @@ import { normaliseer, type Backend } from './types'
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 
-export const supabase = url && anonKey ? createClient(url, anonKey) : null
+// Login bewaren in de browser en automatisch verlengen, zodat je ingelogd blijft tot je zelf uitlogt.
+export const supabase =
+  url && anonKey
+    ? createClient(url, anonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } })
+    : null
 
 const BUCKET = 'fotos'
 
