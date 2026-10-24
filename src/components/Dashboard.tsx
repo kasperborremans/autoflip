@@ -24,9 +24,9 @@ export default function Dashboard({ autos }: { autos: Auto[] }) {
       <div className="kpis">
         <Kpi label="Gerealiseerde winst" value={euro(gerealiseerd)} tone={gerealiseerd >= 0 ? 'pos' : 'neg'} />
         <Kpi label="Kapitaal in voorraad" value={euro(kapitaal)} />
-        <Kpi label="Verwachte winst voorraad" value={euro(verwacht)} hint="op basis van vraagprijs" />
+        <Kpi label="Verwachte winst" value={euro(verwacht)} hint="voorraad, op vraagprijs" />
         <Kpi label="Gem. winst per auto" value={euro(gemWinst)} />
-        <Kpi label="Gem. dagen tot verkoop" value={Math.round(gemDagen).toString()} />
+        <Kpi label="Dagen tot verkoop" hint="gemiddeld" value={Math.round(gemDagen).toString()} />
       </div>
 
       <div className="card">
@@ -47,14 +47,14 @@ export default function Dashboard({ autos }: { autos: Auto[] }) {
         ) : (
           <table>
             <thead>
-              <tr><th>Auto</th><th className="num">Geïnvesteerd</th><th className="num">Verkocht</th><th className="num">Winst</th></tr>
+              <tr><th>Auto</th><th className="num alleen-desktop">Geïnvesteerd</th><th className="num alleen-desktop">Verkocht</th><th className="num">Winst</th></tr>
             </thead>
             <tbody>
               {top.map((a) => (
                 <tr key={a.id}>
                   <td>{a.merk} {a.model}</td>
-                  <td className="num">{euro(geinvesteerd(a))}</td>
-                  <td className="num">{euro(a.verkoopprijs ?? 0)}</td>
+                  <td className="num alleen-desktop">{euro(geinvesteerd(a))}</td>
+                  <td className="num alleen-desktop">{euro(a.verkoopprijs ?? 0)}</td>
                   <td className={`num ${(winst(a) ?? 0) >= 0 ? 'pos' : 'neg'}`}>{euro(winst(a) ?? 0)}</td>
                 </tr>
               ))}
