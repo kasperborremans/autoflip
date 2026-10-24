@@ -3,29 +3,21 @@ import type { Auto, Status } from '../types'
 import { STATUS_LABELS } from '../types'
 import { dagenInBezit, euro, geinvesteerd, winst } from '../calc'
 import AutoForm from './AutoForm'
+import Foto from './Foto'
 
 interface Props {
   autos: Auto[]
-  setAutos: React.Dispatch<React.SetStateAction<Auto[]>>
+  opslaan: (a: Auto) => void
+  verwijder: (a: Auto) => void
 }
 
-export default function AutoLijst({ autos, setAutos }: Props) {
+export default function AutoLijst({ autos, opslaan, verwijder }: Props) {
   const [filter, setFilter] = useState<Status | 'alle'>('alle')
   const [bewerk, setBewerk] = useState<Auto | 'nieuw' | null>(null)
 
   const zichtbaar = autos
     .filter((a) => filter === 'alle' || a.status === filter)
     .sort((a, b) => b.aankoopdatum.localeCompare(a.aankoopdatum))
-
-  function opslaan(auto: Auto) {
-    setAutos((prev) => (prev.some((a) => a.id === auto.id) ? prev.map((a) => (a.id === auto.id ? auto : a)) : [...prev, auto]))
-    setBewerk(null)
-  }
-
-  function verwijder(id: string) {
-    setAutos((prev) => prev.filter((a) => a.id !== id))
-    setBewerk(null)
-  }
 
   return (
     <section className="stack">
@@ -46,7 +38,7 @@ export default function AutoLijst({ autos, setAutos }: Props) {
           <table>
             <thead>
               <tr>
-                <th>Auto</th><th>Status</th><th className="num">Geïnvesteerd</th>
+                <th className="foto-kolom"></th><th>Auto</th><th>Status</th><th className="num">Geïnvesteerd</th>
                 <th className="num">Vraag / verkoop</th><th className="num">Winst</th><th className="num">Dagen</th>
               </tr>
             </thead>
@@ -55,6 +47,7 @@ export default function AutoLijst({ autos, setAutos }: Props) {
                 const w = winst(a)
                 return (
                   <tr key={a.id} className="clickable" onClick={() => setBewerk(a)}>
+                    <td className="foto-kolom">{a.fotos[0] ? <Foto path={a.fotos[0]} className="thumb" /> : <div className="thumb foto-leeg">🚗</div>}</td>
                     <td>
                       <strong>{a.merk} {a.model}</strong>
                       <div className="muted small">{[a.bouwjaar, a.kenteken].filter(Boolean).join(' · ')}</div>
@@ -77,8 +70,8 @@ export default function AutoLijst({ autos, setAutos }: Props) {
       {bewerk && (
         <AutoForm
           auto={bewerk === 'nieuw' ? undefined : bewerk}
-          onSave={opslaan}
-          onDelete={verwijder}
+          onSave={(a) => { opslaan(a); setBewerk(null) }}
+          onDelete={(a) => { verwijder(a); setBewerk(null) }}
           onClose={() => setBewerk(null)}
         />
       )}

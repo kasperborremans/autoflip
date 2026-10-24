@@ -29,4 +29,6 @@ export interface Auto {
   verkoopprijs?: number
   verkoopdatum?: string
   notities: string
+  /** Opslagpaden van foto's; de eerste is de hoofdfoto. */
+  fotos: string[]
 }

@@ -1,13 +1,15 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { Auto, Kost, Status } from '../types'
 import { STATUS_LABELS } from '../types'
 import { euro, geinvesteerd, totaleKosten, winst } from '../calc'
-import { newId, today } from '../storage'
+import { backend } from '../backend'
+import { newId, today, verkleinFoto } from '../util'
+import Foto from './Foto'
 
 interface Props {
   auto?: Auto
   onSave: (a: Auto) => void
-  onDelete: (id: string) => void
+  onDelete: (a: Auto) => void
   onClose: () => void
 }
 
@@ -20,6 +22,7 @@ const leeg = (): Auto => ({
   aankoopdatum: today(),
   kosten: [],
   notities: '',
+  fotos: [],
 })
 
 const num = (v: string) => (v === '' ? undefined : Number(v))
@@ -27,6 +30,13 @@ const num = (v: string) => (v === '' ? undefined : Number(v))
 export default function AutoForm({ auto, onSave, onDelete, onClose }: Props) {
   const [a, setA] = useState<Auto>(auto ?? leeg())
   const [kost, setKost] = useState({ omschrijving: '', bedrag: '' })
+  const [uploaden, setUploaden] = useState(0)
+  const [groot, setGroot] = useState<string | null>(null)
+  // Foto's worden direct geüpload, maar pas definitief bij Opslaan: bij Annuleren ruimen we nieuwe
+  // uploads weer op en verwijderde foto's worden pas na Opslaan echt gewist.
+  const nieuweFotos = useRef<string[]>([])
+  const verwijderdeFotos = useRef<string[]>([])
+  const fotoInput = useRef<HTMLInputElement>(null)
 
   const set = <K extends keyof Auto>(k: K, v: Auto[K]) => setA((prev) => ({ ...prev, [k]: v }))
 
@@ -38,20 +48,62 @@ export default function AutoForm({ auto, onSave, onDelete, onClose }: Props) {
     setKost({ omschrijving: '', bedrag: '' })
   }
 
+  async function voegFotosToe(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = [...(e.target.files ?? [])]
+    e.target.value = ''
+    setUploaden((n) => n + files.length)
+    await Promise.all(
+      files.map(async (file) => {
+        try {
+          const path = await backend.uploadFoto(a.id, await verkleinFoto(file))
+          nieuweFotos.current.push(path)
+          setA((prev) => ({ ...prev, fotos: [...prev.fotos, path] }))
+        } catch (err) {
+          alert(`Foto uploaden mislukt: ${(err as Error).message}`)
+        } finally {
+          setUploaden((n) => n - 1)
+        }
+      }),
+    )
+  }
+
+  function verwijderFoto(path: string) {
+    set('fotos', a.fotos.filter((p) => p !== path))
+    verwijderdeFotos.current.push(path)
+    setGroot(null)
+  }
+
+  const maakHoofdfoto = (path: string) => set('fotos', [path, ...a.fotos.filter((p) => p !== path)])
+
+  const ruimOp = (paths: string[]) => backend.deleteFotos(paths).catch(() => {})
+
+  function sluit() {
+    ruimOp(nieuweFotos.current)
+    onClose()
+  }
+
   function submit(e: React.FormEvent) {
     e.preventDefault()
+    if (uploaden) return alert("Wacht tot de foto's geüpload zijn.")
+    ruimOp(verwijderdeFotos.current)
     const klaar = a.status === 'verkocht' && !a.verkoopdatum ? { ...a, verkoopdatum: today() } : a
     onSave(klaar)
+  }
+
+  function verwijderAuto() {
+    if (!confirm('Deze auto verwijderen?')) return
+    // Alles wat bij deze auto hoort opruimen, ook foto's die nog niet waren opgeslagen.
+    onDelete({ ...a, fotos: [...new Set([...(auto?.fotos ?? []), ...a.fotos, ...verwijderdeFotos.current])] })
   }
 
   const w = winst(a)
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop" onClick={sluit}>
       <form className="modal card" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
         <div className="modal-head">
           <h2>{auto ? `${auto.merk} ${auto.model}` : 'Nieuwe auto'}</h2>
-          <button type="button" className="ghost" onClick={onClose} aria-label="Sluiten">✕</button>
+          <button type="button" className="ghost" onClick={sluit} aria-label="Sluiten">✕</button>
         </div>
 
         <div className="grid">
@@ -74,6 +126,19 @@ export default function AutoForm({ auto, onSave, onDelete, onClose }: Props) {
               <Field label="Verkoopdatum"><input type="date" value={a.verkoopdatum ?? ''} onChange={(e) => set('verkoopdatum', e.target.value)} /></Field>
             </>
           )}
+        </div>
+
+        <h3>Foto's</h3>
+        <div className="fotos">
+          {a.fotos.map((p, i) => (
+            <div key={p} className="foto-tegel">
+              <Foto path={p} className="foto" onClick={() => setGroot(p)} />
+              {i === 0 && <span className="hoofd-label">Hoofdfoto</span>}
+            </div>
+          ))}
+          {Array.from({ length: uploaden }, (_, i) => <div key={`u${i}`} className="foto foto-leeg">⏳</div>)}
+          <button type="button" className="foto foto-toevoegen" onClick={() => fotoInput.current?.click()}>+ Foto</button>
+          <input ref={fotoInput} type="file" accept="image/*" multiple hidden onChange={voegFotosToe} />
         </div>
 
         <h3>Kosten</h3>
@@ -104,13 +169,24 @@ export default function AutoForm({ auto, onSave, onDelete, onClose }: Props) {
 
         <div className="modal-actions">
           {auto && (
-            <button type="button" className="danger" onClick={() => confirm('Deze auto verwijderen?') && onDelete(a.id)}>Verwijderen</button>
+            <button type="button" className="danger" onClick={verwijderAuto}>Verwijderen</button>
           )}
           <span className="spacer" />
-          <button type="button" className="ghost" onClick={onClose}>Annuleren</button>
-          <button type="submit">Opslaan</button>
+          <button type="button" className="ghost" onClick={sluit}>Annuleren</button>
+          <button type="submit" disabled={uploaden > 0}>Opslaan</button>
         </div>
       </form>
+
+      {groot && (
+        <div className="lightbox" onClick={(e) => { e.stopPropagation(); setGroot(null) }}>
+          <Foto path={groot} className="lightbox-img" />
+          <div className="lightbox-acties" onClick={(e) => e.stopPropagation()}>
+            {a.fotos[0] !== groot && <button type="button" onClick={() => { maakHoofdfoto(groot); setGroot(null) }}>Maak hoofdfoto</button>}
+            <button type="button" className="danger" onClick={() => verwijderFoto(groot)}>Foto verwijderen</button>
+            <button type="button" className="ghost" onClick={() => setGroot(null)}>Sluiten</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

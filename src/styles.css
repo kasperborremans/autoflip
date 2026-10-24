@@ -125,3 +125,26 @@ hr { border: none; border-top: 1px solid var(--border); width: 100%; margin: 0; 
   .kost-add { grid-template-columns: 1fr 90px; }
   .kost-add button { grid-column: span 2; }
 }
+
+/* Inloggen */
+.center { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.narrow { width: 100%; max-width: 380px; }
+button:disabled { opacity: 0.6; cursor: default; }
+code { background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+
+/* Foto's */
+.foto-kolom { width: 72px; padding-right: 0; }
+.thumb { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; display: block; }
+.foto-leeg { background: var(--bg); display: flex; align-items: center; justify-content: center; color: var(--muted); }
+.fotos { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+.foto-tegel { position: relative; }
+.foto { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; display: flex; cursor: pointer; }
+.foto-toevoegen { background: transparent; color: var(--muted); border: 1px dashed var(--border); align-items: center; justify-content: center; }
+.hoofd-label { position: absolute; left: 6px; bottom: 6px; font-size: 0.7rem; background: rgb(0 0 0 / 0.65); color: #fff; padding: 1px 6px; border-radius: 4px; }
+.lightbox {
+  position: fixed; inset: 0; background: rgb(0 0 0 / 0.85); z-index: 10;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 16px;
+}
+.lightbox-img { max-width: 100%; max-height: 80vh; border-radius: 8px; object-fit: contain; }
+.lightbox-acties { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.lightbox .ghost { color: #fff; border-color: rgb(255 255 255 / 0.4); }
