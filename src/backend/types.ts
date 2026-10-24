@@ -16,4 +16,10 @@ export interface Backend {
 }
 
 /** Vult velden aan die in oudere opgeslagen gegevens kunnen ontbreken. */
-export const normaliseer = (a: Auto): Auto => ({ ...a, kosten: a.kosten ?? [], fotos: a.fotos ?? [], notities: a.notities ?? '' })
+export const normaliseer = (a: Auto): Auto => ({
+  ...a,
+  kosten: a.kosten ?? [],
+  fotos: a.fotos ?? [],
+  notities: a.notities ?? '',
+  verrekend: a.verrekend ?? false,
+})

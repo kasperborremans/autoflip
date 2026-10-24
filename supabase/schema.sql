@@ -59,3 +59,14 @@ create policy "leden beheren fotos" on storage.objects
 
 -- Vervang door jullie eigen e-mailadressen:
 -- insert into public.leden (email) values ('jij@voorbeeld.nl'), ('lenno@voorbeeld.nl');
+
+-- ---------------------------------------------------------------------------
+-- Update 2: winstverdeling en auto's "op het oog". Veilig om opnieuw uit te voeren.
+alter table public.autos drop constraint if exists autos_status_check;
+alter table public.autos add constraint autos_status_check
+  check (status in ('interessant', 'gekocht', 'in-reparatie', 'te-koop', 'verkocht'));
+alter table public.autos
+  add column if not exists betaald_door text check (betaald_door in ('kasper', 'lenno', 'samen')),
+  add column if not exists ontvangen_door text check (ontvangen_door in ('kasper', 'lenno', 'samen')),
+  add column if not exists verrekend boolean not null default false,
+  add column if not exists link text;

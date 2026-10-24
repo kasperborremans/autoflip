@@ -5,26 +5,48 @@
   --muted: #6b7280;
   --border: #e3e5ea;
   --accent: #2563eb;
+  --accent-zacht: rgb(37 99 235 / 0.1);
   --accent-text: #ffffff;
   --pos: #15803d;
   --neg: #b91c1c;
   --warn: #b45309;
+  --balk: rgb(255 255 255 / 0.85);
+  --schaduw: 0 10px 30px rgb(15 23 42 / 0.12);
   --radius: 10px;
   color-scheme: light;
 }
+/* Donker: volgt het systeem tenzij in Instellingen 'Licht' gekozen is, of is handmatig gekozen. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="licht"]) {
     --bg: #0f1115;
     --surface: #181b21;
     --text: #e8eaee;
     --muted: #9aa1ad;
     --border: #2a2e37;
     --accent: #3b82f6;
+    --accent-zacht: rgb(59 130 246 / 0.18);
     --pos: #4ade80;
     --neg: #f87171;
     --warn: #fbbf24;
+    --balk: rgb(24 27 33 / 0.82);
+    --schaduw: 0 10px 30px rgb(0 0 0 / 0.5);
     color-scheme: dark;
   }
+}
+:root[data-theme="donker"] {
+  --bg: #0f1115;
+  --surface: #181b21;
+  --text: #e8eaee;
+  --muted: #9aa1ad;
+  --border: #2a2e37;
+  --accent: #3b82f6;
+  --accent-zacht: rgb(59 130 246 / 0.18);
+  --pos: #4ade80;
+  --neg: #f87171;
+  --warn: #fbbf24;
+  --balk: rgb(24 27 33 / 0.82);
+  --schaduw: 0 10px 30px rgb(0 0 0 / 0.5);
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -48,13 +70,14 @@ h3 { font-size: 1rem; margin-top: 1rem; }
 .tabs { display: flex; gap: 4px; }
 .tabs button { background: transparent; color: var(--muted); border-color: transparent; }
 .tabs button.active { background: var(--surface); color: var(--text); border-color: var(--border); }
-.menu-wrap { margin-left: auto; position: relative; }
 .icon-knop { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; padding: 6px; }
-.menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; min-width: 240px; padding: 6px; display: flex; flex-direction: column; box-shadow: 0 8px 24px rgb(0 0 0 / 0.15); }
-.menu-info { padding: 8px 10px; border-bottom: 1px solid var(--border); margin-bottom: 4px; word-break: break-all; }
-.menu-item { background: transparent; border: none; color: var(--text); text-align: left; padding: 10px; border-radius: 6px; }
+.menu-item { display: flex; gap: 12px; align-items: center; background: transparent; border: none; color: var(--text); text-align: left; padding: 10px; border-radius: 8px; }
 .menu-item:hover { background: var(--bg); }
-.menu-item.neg { color: var(--neg); }
+.menu-item svg { flex: none; color: var(--accent); }
+.menu-item span { display: flex; flex-direction: column; }
+.toevoeg-wrap { position: relative; }
+.toevoeg-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; width: 300px; padding: 6px; display: flex; flex-direction: column; box-shadow: var(--schaduw); }
+.alleen-mobiel { display: none; }
 .bottomnav, .fab { display: none; }
 
 button {
@@ -139,40 +162,98 @@ hr { border: none; border-top: 1px solid var(--border); width: 100%; margin: 0; 
 .modal-head { position: sticky; top: 0; z-index: 2; background: var(--surface); margin: -16px -16px 0; padding: 12px 16px; border-bottom: 1px solid var(--border); border-radius: var(--radius) var(--radius) 0 0; }
 .modal-actions { position: sticky; bottom: 0; z-index: 2; background: var(--surface); margin: 0 -16px -16px; padding: 12px 16px; border-top: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); }
 
+/* Keuzeschakelaar (Kasper / Lenno / Samen, Licht / Donker) */
+.keuze { display: flex; padding: 3px; gap: 3px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; }
+.keuze button { flex: 1; background: transparent; border: none; color: var(--muted); padding: 7px 8px; border-radius: 7px; white-space: nowrap; }
+.keuze button.active { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: 0 1px 3px rgb(0 0 0 / 0.12); }
+.keuze.klein button { padding: 4px 6px; font-size: 0.85rem; }
+.veld-breed { grid-column: 1 / -1; }
+.link-rij { display: flex; gap: 8px; }
+a.knop { display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 8px; color: var(--text); }
+.vink { display: flex; align-items: center; gap: 8px; width: 100%; }
+.vink input { width: auto; }
+.oog-balk { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 8px; background: var(--accent-zacht); }
+.oog-balk button { flex: none; white-space: nowrap; }
+.verdeel-samenvatting { flex-direction: column; }
+
+/* Groepen per status */
+.groep { display: flex; flex-direction: column; gap: 8px; }
+.groep-kop { display: flex; align-items: center; gap: 8px; margin: 4px 0 0; font-size: 0.95rem; }
+.stip { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+.stip.s-interessant { background: #a855f7; }
+.stip.s-gekocht { background: #94a3b8; }
+.stip.s-in-reparatie { background: var(--warn); }
+.stip.s-te-koop { background: var(--accent); }
+.stip.s-verkocht { background: var(--pos); }
+.s-interessant { border-color: #a855f7; }
+
+/* Verdeling */
+.saldo-kaart { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border: none; padding: 20px; }
+.saldo-kaart .muted { color: rgb(255 255 255 / 0.75); }
+.saldo-kaart.gelijk { background: linear-gradient(135deg, #16a34a, #15803d); }
+.saldo-bedrag { font-size: 2rem; letter-spacing: -0.02em; }
+.saldo-kaart button { margin-top: 8px; background: #fff; color: #1d4ed8; border-color: #fff; font-weight: 600; }
+.verdeel-lijst { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.verdeel-kop { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.verdeel-tabel th, .verdeel-tabel td { padding: 4px 8px; }
+.verdeel-tabel td:first-child { color: var(--muted); padding-left: 0; }
+.uitleg { margin: 0; }
+
+/* Instellingen */
+.instelling-rij { display: flex; justify-content: space-between; gap: 12px; }
+.breek { word-break: break-all; text-align: right; }
+
 /* ---------- Telefoon ---------- */
 @media (max-width: 700px) {
   body { -webkit-tap-highlight-color: transparent; }
   .alleen-desktop { display: none !important; }
-  .app { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+  .alleen-mobiel { display: inline; }
+  .app { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
   .topbar {
     position: sticky; top: 0; z-index: 5; background: var(--bg);
     padding: calc(10px + env(safe-area-inset-top)) 0 10px; margin-bottom: 12px;
   }
-  .topbar h1 { font-size: 1.15rem; }
+  .topbar { border-bottom: none; }
+  .topbar h1 { font-size: 1.6rem; letter-spacing: -0.02em; }
+  .topbar .logo { width: 30px; height: 30px; }
   .tabs { display: none; }
 
+  /* Zwevende, afgeronde navigatiebalk (Revolut-stijl) */
   .bottomnav {
-    display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
-    background: var(--surface); border-top: 1px solid var(--border);
-    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    display: flex; position: fixed; z-index: 6;
+    left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom));
+    padding: 6px; border-radius: 26px;
+    background: var(--balk); border: 1px solid var(--border); box-shadow: var(--schaduw);
+    -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
   }
   .bottomnav button {
-    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
-    background: transparent; border: none; color: var(--muted); padding: 6px 0; font-size: 0.75rem;
+    flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    background: transparent; border: none; color: var(--muted); padding: 4px 0; font-size: 0.66rem;
   }
-  .bottomnav button.active { color: var(--accent); font-weight: 600; }
+  .nav-icoon {
+    display: flex; align-items: center; justify-content: center; width: 48px; height: 30px; border-radius: 15px;
+    transition: background 0.2s, color 0.2s;
+  }
+  .nav-icoon svg { width: 22px; height: 22px; }
+  .nav-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .bottomnav button.active { color: var(--text); font-weight: 600; }
+  .bottomnav button.active .nav-icoon { background: var(--accent-zacht); color: var(--accent); }
 
   .fab {
-    display: flex; align-items: center; justify-content: center; position: fixed; z-index: 6;
-    right: 16px; bottom: calc(80px + env(safe-area-inset-bottom));
+    display: flex; align-items: center; justify-content: center; position: fixed; z-index: 7;
+    right: 18px; bottom: calc(92px + env(safe-area-inset-bottom));
     width: 56px; height: 56px; border-radius: 50%; padding: 0;
-    box-shadow: 0 6px 16px rgb(37 99 235 / 0.4);
+    box-shadow: 0 8px 20px rgb(37 99 235 / 0.4); transition: transform 0.2s;
   }
   .fab svg { width: 28px; height: 28px; }
+  .fab.open { transform: rotate(45deg); }
+  .fab-menu { position: fixed; z-index: 7; right: 18px; left: 18px; bottom: calc(158px + env(safe-area-inset-bottom)); }
+  .fab-menu .toevoeg-menu { position: static; width: auto; }
+  .fab-ruimte { height: 72px; }
 
   .zoek { max-width: none; }
 
-  .auto-kaarten { display: flex; flex-direction: column; gap: 10px; padding-bottom: 64px; }
+  .auto-kaarten { display: flex; flex-direction: column; gap: 10px; }
   .auto-kaart {
     display: flex; gap: 12px; align-items: center; width: 100%; text-align: left;
     color: var(--text); background: var(--surface); border-color: var(--border); padding: 10px;
