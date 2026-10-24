@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { backend, supabase } from './backend'
 import { useAutos } from './useAutos'
 import { exportJson, importJson } from './util'
@@ -6,13 +6,14 @@ import AuthGate from './components/AuthGate'
 import Dashboard from './components/Dashboard'
 import AutoLijst from './components/AutoLijst'
 import Calculator from './components/Calculator'
+import { IconAuto, IconCalculator, IconMeer, IconOverzicht } from './components/Iconen'
 
 type Tab = 'overzicht' | 'autos' | 'calculator'
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'overzicht', label: 'Overzicht' },
-  { id: 'autos', label: "Auto's" },
-  { id: 'calculator', label: 'Calculator' },
+const TABS: { id: Tab; label: string; icoon: () => JSX.Element }[] = [
+  { id: 'overzicht', label: 'Overzicht', icoon: IconOverzicht },
+  { id: 'autos', label: "Auto's", icoon: IconAuto },
+  { id: 'calculator', label: 'Calculator', icoon: IconCalculator },
 ]
 
 export default function App() {
@@ -22,7 +23,19 @@ export default function App() {
 function Hoofdscherm({ email }: { email: string | null }) {
   const { autos, laden, fout, opslaan, verwijder, importeer } = useAutos()
   const [tab, setTab] = useState<Tab>('overzicht')
+  const [menu, setMenu] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [tab])
+
+  useEffect(() => {
+    if (!menu) return
+    const sluit = () => setMenu(false)
+    document.addEventListener('click', sluit)
+    return () => document.removeEventListener('click', sluit)
+  }, [menu])
 
   async function onImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -39,7 +52,7 @@ function Hoofdscherm({ email }: { email: string | null }) {
   return (
     <div className="app">
       <header className="topbar">
-        <h1>🚗 Autoflip</h1>
+        <h1><img className="logo" src={`${import.meta.env.BASE_URL}icon.svg`} alt="" /> Autoflip</h1>
         <nav className="tabs">
           {TABS.map((t) => (
             <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>
@@ -47,13 +60,20 @@ function Hoofdscherm({ email }: { email: string | null }) {
             </button>
           ))}
         </nav>
-        <div className="data-actions">
-          <span className="badge" title={backend.mode === 'gedeeld' ? 'Gegevens worden gedeeld via Supabase' : 'Gegevens staan alleen in deze browser'}>
-            {backend.mode === 'gedeeld' ? `☁️ ${email}` : '💾 Lokaal'}
-          </span>
-          <button className="ghost" onClick={() => exportJson(autos)}>Exporteren</button>
-          <button className="ghost" onClick={() => fileRef.current?.click()}>Importeren</button>
-          {supabase && <button className="ghost" onClick={() => supabase!.auth.signOut()}>Uitloggen</button>}
+        <div className="menu-wrap">
+          <button className="ghost icon-knop" aria-label="Menu" onClick={(e) => { e.stopPropagation(); setMenu(!menu) }}>
+            <IconMeer />
+          </button>
+          {menu && (
+            <div className="menu card" onClick={(e) => e.stopPropagation()}>
+              <div className="menu-info muted small">
+                {backend.mode === 'gedeeld' ? `☁️ Ingelogd als ${email}` : '💾 Gegevens staan alleen in deze browser'}
+              </div>
+              <button className="menu-item" onClick={() => { exportJson(autos); setMenu(false) }}>Exporteren (reservekopie)</button>
+              <button className="menu-item" onClick={() => { fileRef.current?.click(); setMenu(false) }}>Importeren</button>
+              {supabase && <button className="menu-item neg" onClick={() => supabase!.auth.signOut()}>Uitloggen</button>}
+            </div>
+          )}
           <input ref={fileRef} type="file" accept="application/json" hidden onChange={onImport} />
         </div>
       </header>
@@ -69,6 +89,14 @@ function Hoofdscherm({ email }: { email: string | null }) {
           </>
         )}
       </main>
+      <nav className="bottomnav">
+        {TABS.map((t) => (
+          <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>
+            <t.icoon />
+            <span>{t.label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   )
 }

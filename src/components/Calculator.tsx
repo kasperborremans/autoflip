@@ -30,7 +30,7 @@ export default function Calculator() {
         {VELDEN.map((v) => (
           <label key={v.key} className="field">
             <span>{v.label} (€)</span>
-            <input type="number" min={0} value={input[v.key]} onChange={(e) => setInput({ ...input, [v.key]: Number(e.target.value) })} />
+            <input type="number" inputMode="numeric" min={0} value={input[v.key]} onChange={(e) => setInput({ ...input, [v.key]: Number(e.target.value) })} />
             {v.hint && <small className="muted">{v.hint}</small>}
           </label>
         ))}

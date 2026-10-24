@@ -53,7 +53,7 @@ function Login() {
   return (
     <div className="center">
       <form className="card stack narrow" onSubmit={submit}>
-        <h1>🚗 Autoflip</h1>
+        <h1 className="login-titel"><img className="logo" src={`${import.meta.env.BASE_URL}icon.svg`} alt="" /> Autoflip</h1>
         <label className="field"><span>E-mailadres</span><input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
         <label className="field"><span>Wachtwoord</span><input type="password" required autoComplete="current-password" value={wachtwoord} onChange={(e) => setWachtwoord(e.target.value)} /></label>
         {fout && <p className="neg">{fout}</p>}

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Auto, Kost, Status } from '../types'
 import { STATUS_LABELS } from '../types'
 import { euro, geinvesteerd, totaleKosten, winst } from '../calc'
@@ -77,23 +77,54 @@ export default function AutoForm({ auto, onSave, onDelete, onClose }: Props) {
 
   const ruimOp = (paths: string[]) => backend.deleteFotos(paths).catch(() => {})
 
-  function sluit() {
-    ruimOp(nieuweFotos.current)
-    onClose()
+  // Het formulier krijgt een eigen stap in de browsergeschiedenis, zodat de terugknop van de
+  // telefoon het formulier sluit in plaats van de app te verlaten.
+  const gesloten = useRef(false)
+  function afronden(actie: () => void) {
+    if (gesloten.current) return
+    gesloten.current = true
+    actie()
+    if (history.state?.autoflipFormulier) history.back()
   }
+
+  const sluit = () => afronden(() => { ruimOp(nieuweFotos.current); onClose() })
+
+  const laatste = useRef({ sluit, groot })
+  laatste.current = { sluit, groot }
+  useEffect(() => {
+    if (!history.state?.autoflipFormulier) history.pushState({ autoflipFormulier: true }, '')
+    const onPop = () => {
+      if (laatste.current.groot) {
+        // Terug sluit eerst de grote foto; het formulier blijft open.
+        setGroot(null)
+        history.pushState({ autoflipFormulier: true }, '')
+      } else laatste.current.sluit()
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (laatste.current.groot) setGroot(null)
+      else laatste.current.sluit()
+    }
+    window.addEventListener('popstate', onPop)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('popstate', onPop)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [])
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
     if (uploaden) return alert("Wacht tot de foto's geüpload zijn.")
-    ruimOp(verwijderdeFotos.current)
     const klaar = a.status === 'verkocht' && !a.verkoopdatum ? { ...a, verkoopdatum: today() } : a
-    onSave(klaar)
+    afronden(() => { ruimOp(verwijderdeFotos.current); onSave(klaar) })
   }
 
   function verwijderAuto() {
     if (!confirm('Deze auto verwijderen?')) return
     // Alles wat bij deze auto hoort opruimen, ook foto's die nog niet waren opgeslagen.
-    onDelete({ ...a, fotos: [...new Set([...(auto?.fotos ?? []), ...a.fotos, ...verwijderdeFotos.current])] })
+    const fotos = [...new Set([...(auto?.fotos ?? []), ...a.fotos, ...verwijderdeFotos.current])]
+    afronden(() => onDelete({ ...a, fotos }))
   }
 
   const w = winst(a)
@@ -103,26 +134,26 @@ export default function AutoForm({ auto, onSave, onDelete, onClose }: Props) {
       <form className="modal card" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
         <div className="modal-head">
           <h2>{auto ? `${auto.merk} ${auto.model}` : 'Nieuwe auto'}</h2>
-          <button type="button" className="ghost" onClick={sluit} aria-label="Sluiten">✕</button>
+          <button type="button" className="ghost icon-knop" onClick={sluit} aria-label="Sluiten">✕</button>
         </div>
 
         <div className="grid">
           <Field label="Merk"><input required value={a.merk} onChange={(e) => set('merk', e.target.value)} /></Field>
           <Field label="Model"><input required value={a.model} onChange={(e) => set('model', e.target.value)} /></Field>
-          <Field label="Bouwjaar"><input type="number" value={a.bouwjaar ?? ''} onChange={(e) => set('bouwjaar', num(e.target.value))} /></Field>
-          <Field label="Kilometerstand"><input type="number" value={a.kilometerstand ?? ''} onChange={(e) => set('kilometerstand', num(e.target.value))} /></Field>
-          <Field label="Kenteken"><input value={a.kenteken ?? ''} onChange={(e) => set('kenteken', e.target.value.toUpperCase())} /></Field>
+          <Field label="Bouwjaar"><input type="number" inputMode="numeric" value={a.bouwjaar ?? ''} onChange={(e) => set('bouwjaar', num(e.target.value))} /></Field>
+          <Field label="Kilometerstand"><input type="number" inputMode="numeric" value={a.kilometerstand ?? ''} onChange={(e) => set('kilometerstand', num(e.target.value))} /></Field>
+          <Field label="Kenteken"><input autoCapitalize="characters" autoCorrect="off" value={a.kenteken ?? ''} onChange={(e) => set('kenteken', e.target.value.toUpperCase())} /></Field>
           <Field label="Status">
             <select value={a.status} onChange={(e) => set('status', e.target.value as Status)}>
               {(Object.keys(STATUS_LABELS) as Status[]).map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
             </select>
           </Field>
-          <Field label="Aankoopprijs (€)"><input type="number" required min={0} value={a.aankoopprijs} onChange={(e) => set('aankoopprijs', Number(e.target.value))} /></Field>
+          <Field label="Aankoopprijs (€)"><input type="number" inputMode="numeric" required min={0} value={a.aankoopprijs || ''} onChange={(e) => set('aankoopprijs', Number(e.target.value))} /></Field>
           <Field label="Aankoopdatum"><input type="date" required value={a.aankoopdatum} onChange={(e) => set('aankoopdatum', e.target.value)} /></Field>
-          <Field label="Vraagprijs (€)"><input type="number" min={0} value={a.vraagprijs ?? ''} onChange={(e) => set('vraagprijs', num(e.target.value))} /></Field>
+          <Field label="Vraagprijs (€)"><input type="number" inputMode="numeric" min={0} value={a.vraagprijs ?? ''} onChange={(e) => set('vraagprijs', num(e.target.value))} /></Field>
           {a.status === 'verkocht' && (
             <>
-              <Field label="Verkoopprijs (€)"><input type="number" required min={0} value={a.verkoopprijs ?? ''} onChange={(e) => set('verkoopprijs', num(e.target.value))} /></Field>
+              <Field label="Verkoopprijs (€)"><input type="number" inputMode="numeric" required min={0} value={a.verkoopprijs ?? ''} onChange={(e) => set('verkoopprijs', num(e.target.value))} /></Field>
               <Field label="Verkoopdatum"><input type="date" value={a.verkoopdatum ?? ''} onChange={(e) => set('verkoopdatum', e.target.value)} /></Field>
             </>
           )}
@@ -155,7 +186,7 @@ export default function AutoForm({ auto, onSave, onDelete, onClose }: Props) {
         )}
         <div className="kost-add">
           <input placeholder="bv. remblokken, APK, poetsen" value={kost.omschrijving} onChange={(e) => setKost({ ...kost, omschrijving: e.target.value })} />
-          <input type="number" placeholder="€" value={kost.bedrag} onChange={(e) => setKost({ ...kost, bedrag: e.target.value })} />
+          <input type="number" inputMode="numeric" placeholder="€" value={kost.bedrag} onChange={(e) => setKost({ ...kost, bedrag: e.target.value })} />
           <button type="button" className="ghost" onClick={voegKostToe}>Toevoegen</button>
         </div>
 
@@ -172,8 +203,8 @@ export default function AutoForm({ auto, onSave, onDelete, onClose }: Props) {
             <button type="button" className="danger" onClick={verwijderAuto}>Verwijderen</button>
           )}
           <span className="spacer" />
-          <button type="button" className="ghost" onClick={sluit}>Annuleren</button>
-          <button type="submit" disabled={uploaden > 0}>Opslaan</button>
+          <button type="button" className="ghost alleen-desktop" onClick={sluit}>Annuleren</button>
+          <button type="submit" className="opslaan" disabled={uploaden > 0}>{uploaden > 0 ? "Foto's uploaden…" : 'Opslaan'}</button>
         </div>
       </form>
 
