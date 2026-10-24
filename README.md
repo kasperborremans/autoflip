@@ -25,20 +25,25 @@ Zonder Supabase-instellingen werkt de app ook, maar dan alleen lokaal in je brow
    (vul e-mail en wachtwoord in en vink **Auto Confirm User** aan).
 5. Zet onder **Authentication → Sign In / Providers** de optie **Allow new users to sign up** uit.
    Alleen mensen op de ledenlijst kunnen de gegevens zien, maar zo kan ook niemand anders een account aanmaken.
-6. Kopieer onder **Project Settings → API** de **Project URL** en de **anon public key**.
+6. Zet onder **Project Settings → API Keys → Legacy** de **Project URL** en de **anon public** key in [`.env`](.env).
+   Deze waarden mogen openbaar zijn; zet hier nooit de service_role key.
 
 ## Lokaal draaien
 
 ```bash
 npm install
-cp .env.example .env.local   # vul de Supabase-gegevens in (of laat leeg voor lokale modus)
 npm run dev
+```
+
+Wil je lokaal zonder Supabase testen, maak dan een `.env.local` aan met lege waarden:
+
+```bash
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
 ```
 
 ## Online zetten
 
 Bij een push naar `main` bouwt de workflow in `.github/workflows/deploy.yml` de site en zet hem op GitHub Pages.
 
-1. **Settings → Pages → Source**: kies **GitHub Actions**.
-2. **Settings → Secrets and variables → Actions → Variables**: voeg `VITE_SUPABASE_URL` en `VITE_SUPABASE_ANON_KEY` toe.
-   (De anon key mag openbaar zijn; de toegang wordt in de database afgeschermd via de ledenlijst.)
+Zet hiervoor eenmalig **Settings → Pages → Source** op **GitHub Actions**.
