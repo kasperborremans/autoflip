@@ -31,6 +31,11 @@ create table if not exists public.autos (
 );
 alter table public.autos enable row level security;
 
+-- Nieuwe Supabase-projecten geven ingelogde gebruikers niet meer automatisch toegang tot
+-- nieuwe tabellen; welke rijen ze zien bepaalt de policy hieronder.
+grant select, insert, update, delete on public.autos to authenticated;
+grant execute on function public.is_lid() to authenticated;
+
 drop policy if exists "leden beheren autos" on public.autos;
 create policy "leden beheren autos" on public.autos
   for all to authenticated using (public.is_lid()) with check (public.is_lid());
