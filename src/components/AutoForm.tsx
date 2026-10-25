@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Auto, Betaler, Kost, Status } from '../types'
 import { STATUS_LABELS, STATUSSEN } from '../types'
-import { euro, geinvesteerd, totaleKosten, winst } from '../calc'
+import { euro, geinvesteerd, naarStatus, totaleKosten, winst } from '../calc'
 import { backend } from '../backend'
 import { newId, today, verkleinFoto } from '../util'
 import { afrekening, BETALER_LABELS, PARTNERS } from '../verdeling'
@@ -141,8 +141,7 @@ export default function AutoForm({ auto, soort = 'gekocht', onSave, onDelete, on
   const oog = a.status === 'interessant'
   const titel = auto ? `${auto.merk} ${auto.model}` : oog ? 'Auto op het oog' : 'Nieuwe auto'
 
-  // Van 'op het oog' naar gekocht: de vraagprijs van de verkoper wordt de aankoopprijs (aan te passen).
-  const markeerGekocht = () => setA((prev) => ({ ...prev, status: 'gekocht', aankoopdatum: today(), betaaldDoor: prev.betaaldDoor ?? 'samen' }))
+  const markeerGekocht = () => setA((prev) => naarStatus(prev, 'gekocht'))
 
   return (
     <div className="modal-backdrop" onClick={sluit}>

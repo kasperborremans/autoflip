@@ -187,6 +187,29 @@ a.knop { display: inline-flex; align-items: center; justify-content: center; bor
 .stip.s-verkocht { background: var(--pos); }
 .s-interessant { border-color: #a855f7; }
 
+/* Bord: een kolom per stage, kaarten sleep je ertussen */
+.weergave-rij { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.weergave-rij .keuze { width: 160px; }
+.bord { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; align-items: start; }
+.kolom { display: flex; flex-direction: column; gap: 8px; min-height: 200px; padding: 10px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border); transition: background 0.15s, border-color 0.15s; }
+.kolom.doel { background: var(--accent-zacht); border-color: var(--accent); border-style: dashed; }
+.kolom-kop { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 0.9rem; white-space: nowrap; }
+.kolom-kop .muted { margin-left: auto; }
+.kolom-kaarten { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.kolom-leeg { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; padding: 16px 8px; border: 1px dashed var(--border); border-radius: 8px; }
+.bord-kaart {
+  display: flex; flex-direction: column; gap: 6px; padding: 8px; cursor: grab; background: var(--bg);
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+.bord-kaart:hover { border-color: var(--muted); }
+.bord-kaart.opgepakt { opacity: 0.35; }
+.bord-kaart.zwevend { position: fixed; left: 0; top: 0; z-index: 30; pointer-events: none; box-shadow: var(--schaduw); background: var(--surface); }
+.aan-het-slepen, .aan-het-slepen * { cursor: grabbing !important; }
+.bord-foto { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; font-size: 1.4rem; pointer-events: none; }
+.bord-tekst { display: flex; flex-direction: column; min-width: 0; line-height: 1.35; }
+.bord-tekst > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bord-tekst strong { font-variant-numeric: tabular-nums; }
+
 /* Verdeling */
 .saldo-kaart { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border: none; padding: 20px; }
 .saldo-kaart .muted { color: rgb(255 255 255 / 0.75); }
@@ -252,6 +275,17 @@ a.knop { display: inline-flex; align-items: center; justify-content: center; bor
   .fab-ruimte { height: 72px; }
 
   .zoek { max-width: none; }
+
+  /* Kolommen naast elkaar, horizontaal vegen per stage */
+  .bord {
+    display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+    margin: 0 -16px; padding: 0 16px; scroll-padding: 0 16px;
+  }
+  .bord::-webkit-scrollbar { display: none; }
+  .aan-het-slepen.bord { scroll-snap-type: none; }
+  .kolom { flex: none; width: 78vw; max-width: 320px; scroll-snap-align: start; }
+  .bord-kaart { flex-direction: row; align-items: center; gap: 10px; }
+  .bord-foto { flex: none; width: 76px; height: 56px; aspect-ratio: auto; }
 
   .auto-kaarten { display: flex; flex-direction: column; gap: 10px; }
   .auto-kaart {

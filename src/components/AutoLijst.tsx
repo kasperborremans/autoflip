@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import type { Auto, Status } from '../types'
 import { STATUS_LABELS, STATUSSEN } from '../types'
-import { dagenInBezit, euro, geinvesteerd, winst } from '../calc'
+import { dagenInBezit, euro, geinvesteerd, naarStatus, samenvatting } from '../calc'
 import { useMobiel } from '../useMobiel'
 import AutoForm from './AutoForm'
 import Foto from './Foto'
+import Bord from './Bord'
+import Keuze from './Keuze'
 import { IconAuto, IconOog, IconPlus, IconZoek } from './Iconen'
 
 interface Props {
@@ -14,12 +16,19 @@ interface Props {
 }
 
 type Bewerk = { auto: Auto } | { nieuw: 'gekocht' | 'interessant' } | null
+type Weergave = 'bord' | 'lijst'
+
+const WEERGAVE_KEY = 'autoflip.weergave'
+const leesWeergave = (): Weergave => {
+  try { return localStorage.getItem(WEERGAVE_KEY) === 'lijst' ? 'lijst' : 'bord' } catch { return 'bord' }
+}
 
 export default function AutoLijst({ autos, opslaan, verwijder }: Props) {
   const [filter, setFilter] = useState<Status | 'alle'>('alle')
   const [zoek, setZoek] = useState('')
   const [bewerk, setBewerk] = useState<Bewerk>(null)
   const [toevoegMenu, setToevoegMenu] = useState(false)
+  const [weergave, setWeergave] = useState<Weergave>(leesWeergave)
   const mobiel = useMobiel()
 
   useEffect(() => {
@@ -30,16 +39,28 @@ export default function AutoLijst({ autos, opslaan, verwijder }: Props) {
   }, [toevoegMenu])
 
   const term = zoek.trim().toLowerCase()
-  const zichtbaar = autos
-    .filter((a) => filter === 'alle' || a.status === filter)
+  const gezocht = autos
     .filter((a) => !term || [a.merk, a.model, a.kenteken, a.bouwjaar].some((v) => String(v ?? '').toLowerCase().includes(term)))
     .sort((a, b) => b.aankoopdatum.localeCompare(a.aankoopdatum))
+  const zichtbaar = gezocht.filter((a) => filter === 'alle' || a.status === filter)
 
   // Gegroepeerd per status, in de volgorde van het traject: op het oog → gekocht → … → verkocht.
   const groepen = STATUSSEN.map((s) => ({ status: s, autos: zichtbaar.filter((a) => a.status === s) })).filter((g) => g.autos.length)
 
   const aantal = (s: Status | 'alle') => (s === 'alle' ? autos.length : autos.filter((a) => a.status === s).length)
   const nieuw = (soort: 'gekocht' | 'interessant') => { setToevoegMenu(false); setBewerk({ nieuw: soort }) }
+
+  const kiesWeergave = (w: Weergave) => {
+    setWeergave(w)
+    try { localStorage.setItem(WEERGAVE_KEY, w) } catch { /* niet erg, dan onthouden we het niet */ }
+  }
+
+  function verplaats(a: Auto, status: Status) {
+    const nieuw = naarStatus(a, status)
+    opslaan(nieuw)
+    // Bij verkocht meteen de verkoopprijs laten invullen.
+    if (status === 'verkocht' && nieuw.verkoopprijs === undefined) setBewerk({ auto: nieuw })
+  }
 
   const toevoegKeuzes = (
     <div className="toevoeg-menu card" onClick={(e) => e.stopPropagation()}>
@@ -67,15 +88,24 @@ export default function AutoLijst({ autos, opslaan, verwijder }: Props) {
         )}
       </div>
 
-      <div className="chips">
-        {(['alle', ...STATUSSEN] as const).map((s) => (
-          <button key={s} className={`chip ${filter === s ? 'active' : ''}`} onClick={() => setFilter(s)}>
-            {s === 'alle' ? 'Alle' : STATUS_LABELS[s]} <span className="muted">{aantal(s)}</span>
-          </button>
-        ))}
+      <div className="weergave-rij">
+        <Keuze klein label="Weergave" waarde={weergave} onChange={kiesWeergave} opties={[{ waarde: 'bord', label: 'Bord' }, { waarde: 'lijst', label: 'Lijst' }]} />
+        {weergave === 'bord' && <span className="muted small">{mobiel ? 'Houd een auto vast en sleep hem naar een andere stage' : 'Sleep een auto naar een andere stage'}</span>}
       </div>
 
-      {groepen.length === 0 ? (
+      {weergave === 'lijst' && (
+        <div className="chips">
+          {(['alle', ...STATUSSEN] as const).map((s) => (
+            <button key={s} className={`chip ${filter === s ? 'active' : ''}`} onClick={() => setFilter(s)}>
+              {s === 'alle' ? 'Alle' : STATUS_LABELS[s]} <span className="muted">{aantal(s)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {weergave === 'bord' ? (
+        <Bord autos={gezocht} onKies={(a) => setBewerk({ auto: a })} onVerplaats={verplaats} />
+      ) : groepen.length === 0 ? (
         <div className="card muted">{autos.length ? "Geen auto's gevonden." : "Nog geen auto's. Tik op + om je eerste auto toe te voegen."}</div>
       ) : (
         groepen.map((g) => (
@@ -115,18 +145,6 @@ export default function AutoLijst({ autos, opslaan, verwijder }: Props) {
       )}
     </section>
   )
-}
-
-/** Wat er rechts bij een auto staat: winst (of verwachte winst) en een korte toelichting. */
-function samenvatting(a: Auto) {
-  const w = winst(a)
-  const toelichting =
-    a.status === 'verkocht' ? 'winst'
-    : a.status === 'interessant' ? (w === undefined ? 'geen verkoopprijs' : 'mogelijke winst')
-    : w === undefined ? 'geen vraagprijs' : 'verwacht'
-  const dagen = dagenInBezit(a)
-  const sub = a.status === 'interessant' ? `vraagt ${euro(a.aankoopprijs)}` : `${dagen} ${dagen === 1 ? 'dag' : 'dagen'}`
-  return { w, toelichting, sub }
 }
 
 function AutoTabel({ autos, onKies }: { autos: Auto[]; onKies: (a: Auto) => void }) {
