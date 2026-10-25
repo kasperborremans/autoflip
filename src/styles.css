@@ -13,6 +13,7 @@
   --balk: rgb(255 255 255 / 0.85);
   --schaduw: 0 10px 30px rgb(15 23 42 / 0.12);
   --radius: 10px;
+  --veer: cubic-bezier(0.2, 0.9, 0.3, 1.15);
   color-scheme: light;
 }
 /* Donker: volgt het systeem tenzij in Instellingen 'Licht' gekozen is, of is handmatig gekozen. */
@@ -203,6 +204,15 @@ a.knop { display: inline-flex; align-items: center; justify-content: center; bor
 .instelling-rij { display: flex; justify-content: space-between; gap: 12px; }
 .breek { word-break: break-all; text-align: right; }
 
+@keyframes nav-pop {
+  0% { transform: scale(0.8); }
+  60% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
 /* ---------- Telefoon ---------- */
 @media (max-width: 700px) {
   body { -webkit-tap-highlight-color: transparent; }
@@ -225,25 +235,39 @@ a.knop { display: inline-flex; align-items: center; justify-content: center; bor
     padding: 6px; border-radius: 26px;
     background: var(--balk); border: 1px solid var(--border); box-shadow: var(--schaduw);
     -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+    transition: left 0.35s var(--veer), right 0.35s var(--veer), padding 0.35s var(--veer), border-radius 0.35s var(--veer);
   }
   .bottomnav button {
     flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px;
     background: transparent; border: none; color: var(--muted); padding: 4px 0; font-size: 0.66rem;
+    transition: gap 0.35s var(--veer), padding 0.35s var(--veer);
   }
   .nav-icoon {
     display: flex; align-items: center; justify-content: center; width: 48px; height: 30px; border-radius: 15px;
-    transition: background 0.2s, color 0.2s;
+    transition: background 0.2s, color 0.2s, width 0.35s var(--veer), height 0.35s var(--veer), transform 0.15s;
   }
   .nav-icoon svg { width: 22px; height: 22px; }
-  .nav-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .nav-label {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+    max-height: 16px; transition: max-height 0.35s var(--veer), opacity 0.2s;
+  }
   .bottomnav button.active { color: var(--text); font-weight: 600; }
   .bottomnav button.active .nav-icoon { background: var(--accent-zacht); color: var(--accent); }
+  .bottomnav button.active .nav-icoon svg { animation: nav-pop 0.4s var(--veer); }
+  .bottomnav button:active .nav-icoon { transform: scale(0.88); }
+
+  /* Ingeklapt tijdens naar beneden scrollen: smaller, alleen icoontjes */
+  .bottomnav.klein { left: calc(50% - 130px); right: calc(50% - 130px); padding: 4px; border-radius: 22px; }
+  .bottomnav.klein button { gap: 0; padding: 2px 0; }
+  .bottomnav.klein .nav-icoon { width: 40px; height: 34px; border-radius: 17px; }
+  .bottomnav.klein .nav-label { max-height: 0; opacity: 0; }
+  .app.nav-klein .fab { bottom: calc(68px + env(safe-area-inset-bottom)); }
 
   .fab {
     display: flex; align-items: center; justify-content: center; position: fixed; z-index: 7;
     right: 18px; bottom: calc(92px + env(safe-area-inset-bottom));
     width: 56px; height: 56px; border-radius: 50%; padding: 0;
-    box-shadow: 0 8px 20px rgb(37 99 235 / 0.4); transition: transform 0.2s;
+    box-shadow: 0 8px 20px rgb(37 99 235 / 0.4); transition: transform 0.2s, bottom 0.35s var(--veer);
   }
   .fab svg { width: 28px; height: 28px; }
   .fab.open { transform: rotate(45deg); }

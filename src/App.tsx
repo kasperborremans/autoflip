@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAutos } from './useAutos'
+import { useNavKlein } from './useNavKlein'
 import AuthGate from './components/AuthGate'
 import Dashboard from './components/Dashboard'
 import AutoLijst from './components/AutoLijst'
@@ -25,15 +26,17 @@ export default function App() {
 function Hoofdscherm({ email }: { email: string | null }) {
   const { autos, laden, fout, opslaan, verwijder, importeer } = useAutos()
   const [tab, setTab] = useState<Tab>('overzicht')
+  const [navKlein, setNavKlein] = useNavKlein()
 
   useEffect(() => {
     window.scrollTo(0, 0)
-  }, [tab])
+    setNavKlein(false)
+  }, [tab, setNavKlein])
 
   const titel = TABS.find((t) => t.id === tab)!.label
 
   return (
-    <div className="app">
+    <div className={`app ${navKlein ? 'nav-klein' : ''}`}>
       <header className="topbar">
         <h1>
           <img className="logo" src={`${import.meta.env.BASE_URL}icon.svg`} alt="" />
@@ -62,7 +65,7 @@ function Hoofdscherm({ email }: { email: string | null }) {
           </>
         )}
       </main>
-      <nav className="bottomnav">
+      <nav className={`bottomnav ${navKlein ? 'klein' : ''}`}>
         {TABS.map((t) => (
           <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)} aria-label={t.label}>
             <span className="nav-icoon"><t.icoon /></span>
