@@ -1,10 +1,14 @@
 import type { Auto } from './types'
 import { dagenInBezit, winst } from './calc'
-import { type Brandstof, type ModelInfo, type Probleem, type Verkoop, zelfdeMerk, zoekModel } from './autokennis'
+import { type Brandstof, type ModelInfo, type Probleem, type Verkoop, raadBrandstof, zelfdeMerk, zoekModel } from './autokennis'
 
 export interface AutoGegevens {
   merk: string
   model: string
+  /** Motor of uitvoering, bv. "1.2 TSI Highline". */
+  motor?: string
+  /** Vermogen in kW. */
+  kw?: number
   bouwjaar?: number
   kilometerstand?: number
   brandstof?: Brandstof
@@ -37,7 +41,8 @@ export interface Advies {
   risico: number
 }
 
-export function advies(a: AutoGegevens): Advies {
+export function advies(invoer: AutoGegevens): Advies {
+  const a = { ...invoer, brandstof: invoer.brandstof ?? raadBrandstof(invoer.motor) }
   const info = zoekModel(a.merk, a.model)
   const problemen = (info?.problemen ?? []).filter((p) => speelt(p, a)).sort((x, y) => (x.ernst === y.ernst ? 0 : x.ernst === 'hoog' ? -1 : 1))
   const waarschuwingen: string[] = []
