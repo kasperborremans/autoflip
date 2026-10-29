@@ -8,6 +8,7 @@ Auto's flippen met Lenno — een web-app om de auto's die we kopen, opknappen en
 - **Auto's** — per auto aankoopprijs, kosten (reparaties, APK, poetsen…), vraag-/verkoopprijs, status, notities en foto's.
 - **Foto's** — meerdere foto's per auto (ook direct met je telefooncamera), automatisch verkleind; kies zelf de hoofdfoto.
 - **Calculator** — bereken vóór aankoop of een auto de moeite waard is en wat je maximaal kunt bieden. Vul merk, model, bouwjaar en km-stand in en je krijgt advies: verkoopt hij snel of traag, welke problemen komen vaak voor en waar moet je op letten bij de bezichtiging.
+- **Marktprijs in België** — vul ook motor en vermogen in en open de kant-en-klare zoekopdracht op AutoScout24.be of 2dehands.be. Plak de vraagprijzen van vergelijkbare auto's en de app schat de verkoopprijs (middelste vraagprijs, gecorrigeerd voor km-stand en onderhandelingsmarge) en vult die in de calculator in.
 - **Gedeelde database met login** — jij en Lenno zien dezelfde gegevens, en wijzigingen van de ander verschijnen meteen.
 - **Exporteren / importeren** — reservekopie als JSON-bestand.
 

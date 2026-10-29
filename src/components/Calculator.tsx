@@ -4,9 +4,10 @@ import { calculator, euro, pct, type CalcInput } from '../calc'
 import { type Brandstof, MERKEN, modellenVan } from '../autokennis'
 import { advies, eigenHistorie, VERKOOP_LABELS, type AutoGegevens } from '../advies'
 import Keuze from './Keuze'
+import Marktprijs from './Marktprijs'
 
 const VELDEN: { key: keyof CalcInput; label: string; hint?: string }[] = [
-  { key: 'verwachteVerkoopprijs', label: 'Verwachte verkoopprijs', hint: 'wat vergelijkbare auto\'s opbrengen' },
+  { key: 'verwachteVerkoopprijs', label: 'Verwachte verkoopprijs', hint: 'wat vergelijkbare auto\'s opbrengen — of gebruik de marktprijs hierboven' },
   { key: 'aankoopprijs', label: 'Vraagprijs verkoper / jouw bod' },
   { key: 'reparatie', label: 'Geschatte reparatiekosten' },
   { key: 'overig', label: 'Overige kosten', hint: 'transport, APK, poetsen, advertentie' },
@@ -62,6 +63,14 @@ export default function Calculator({ autos }: { autos: Auto[] }) {
               <input list="calc-modellen" value={auto.model} onChange={(e) => setA('model', e.target.value)} placeholder="bv. Polo" />
             </label>
             <label className="field">
+              <span>Motor / uitvoering</span>
+              <input value={auto.motor ?? ''} onChange={(e) => setA('motor', e.target.value || undefined)} placeholder="bv. 1.2 TSI Highline" />
+            </label>
+            <label className="field">
+              <span>Vermogen (kW)</span>
+              <input type="number" inputMode="numeric" value={auto.kw ?? ''} onChange={(e) => setA('kw', num(e.target.value))} placeholder="staat op het inschrijvingsbewijs" />
+            </label>
+            <label className="field">
               <span>Bouwjaar</span>
               <input type="number" inputMode="numeric" value={auto.bouwjaar ?? ''} onChange={(e) => setA('bouwjaar', num(e.target.value))} />
             </label>
@@ -88,6 +97,8 @@ export default function Calculator({ autos }: { autos: Auto[] }) {
           <datalist id="calc-merken">{MERKEN.map((m) => <option key={m} value={m} />)}</datalist>
           <datalist id="calc-modellen">{modellenVan(auto.merk).map((m) => <option key={m} value={m} />)}</datalist>
         </div>
+
+        <Marktprijs auto={auto} onGebruik={(prijs) => setInput((prev) => ({ ...prev, verwachteVerkoopprijs: prijs }))} />
 
         <div className="card stack">
           <h2>Inkoop-calculator</h2>

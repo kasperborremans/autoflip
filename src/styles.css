@@ -179,6 +179,7 @@ hr { border: none; border-top: 1px solid var(--border); width: 100%; margin: 0; 
 .keuze.klein button { padding: 4px 6px; font-size: 0.85rem; }
 .veld-breed { grid-column: 1 / -1; }
 .link-rij { display: flex; gap: 8px; }
+.markt-link { flex: 1; padding: 8px 12px; text-decoration: none; font-weight: 600; }
 a.knop { display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 8px; color: var(--text); }
 .vink { display: flex; align-items: center; gap: 8px; width: 100%; }
 .vink input { width: auto; }

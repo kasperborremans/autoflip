@@ -210,3 +210,16 @@ export function zoekModel(merk: string, model: string): ModelInfo | undefined {
 }
 
 export const modellenVan = (merk: string) => MODELLEN.filter((m) => zelfdeMerk(m.merk, merk)).map((m) => m.model)
+
+/** De nette merknaam ("vw" → "Volkswagen"), of de invoer zelf als we het merk niet kennen. */
+export const merkNaam = (merk: string) => MERKEN.find((m) => zelfdeMerk(m, merk)) ?? merk.trim()
+
+/** Herkent de brandstof aan de motorcode, bv. "1.6 TDI" → diesel. */
+export function raadBrandstof(motor = ''): Brandstof | undefined {
+  const m = motor.toLowerCase()
+  if (/hybrid|hybride|phev/.test(m)) return 'hybride'
+  if (/\b(tdi|cdti|dci|hdi|bluehdi|tdci|crdi|d-?4d|jtd|multijet|cdi|d)\b|\d{3}d\b|diesel/.test(m)) return 'diesel'
+  if (/\b(lpg|gpl)\b/.test(m)) return 'lpg'
+  if (/\b(tsi|tfsi|fsi|mpi|tce|puretech|vti|thp|ecoboost|gdi|t-?gdi|vvt-?i|twinair|dig-t|benzine)\b/.test(m)) return 'benzine'
+  return undefined
+}
