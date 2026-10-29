@@ -154,7 +154,16 @@ tr.clickable:hover { background: var(--bg); }
 .summary { display: flex; flex-wrap: wrap; gap: 8px 24px; padding: 12px; background: var(--bg); border-radius: 8px; }
 
 .calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
-.result { position: sticky; top: 16px; }
+.advies-lijst { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.advies-lijst li { display: flex; gap: 8px; }
+.advies-lijst li > span { flex: none; width: 1em; font-weight: 700; text-align: center; }
+.problemen { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.problemen li { display: flex; flex-direction: column; gap: 2px; padding-left: 10px; border-left: 3px solid var(--warn); }
+.problemen li.ernst-hoog { border-left-color: var(--neg); }
+.probleem-kop { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.verkoop-snel { border-color: var(--pos); color: var(--pos); }
+.verkoop-normaal { border-color: var(--warn); color: var(--warn); }
+.verkoop-traag { border-color: var(--neg); color: var(--neg); }
 .row { display: flex; justify-content: space-between; gap: 12px; }
 .row.big strong { font-size: 1.6rem; color: var(--accent); }
 .verdict { font-size: 1.3rem; font-weight: 700; }
@@ -308,7 +317,7 @@ a.knop { display: inline-flex; align-items: center; justify-content: center; bor
   .kost-add button { grid-column: span 2; }
 
   .calc { grid-template-columns: 1fr; }
-  .result { order: -1; position: static; }
+  .uitkomst { order: -1; }
   .row.big strong { font-size: 1.4rem; }
 
   button { min-height: 40px; }
