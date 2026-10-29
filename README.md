@@ -7,7 +7,7 @@ Auto's flippen met Lenno — een web-app om de auto's die we kopen, opknappen en
 - **Overzicht** — gerealiseerde winst, kapitaal in voorraad, verwachte winst, gemiddelde winst en doorlooptijd per auto.
 - **Auto's** — per auto aankoopprijs, kosten (reparaties, APK, poetsen…), vraag-/verkoopprijs, status, notities en foto's.
 - **Foto's** — meerdere foto's per auto (ook direct met je telefooncamera), automatisch verkleind; kies zelf de hoofdfoto.
-- **Calculator** — bereken vóór aankoop of een auto de moeite waard is en wat je maximaal kunt bieden.
+- **Calculator** — bereken vóór aankoop of een auto de moeite waard is en wat je maximaal kunt bieden. Vul merk, model, bouwjaar en km-stand in en je krijgt advies: verkoopt hij snel of traag, welke problemen komen vaak voor en waar moet je op letten bij de bezichtiging.
 - **Gedeelde database met login** — jij en Lenno zien dezelfde gegevens, en wijzigingen van de ander verschijnen meteen.
 - **Exporteren / importeren** — reservekopie als JSON-bestand.
 

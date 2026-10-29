@@ -60,7 +60,7 @@ function Hoofdscherm({ email }: { email: string | null }) {
             {tab === 'overzicht' && <Dashboard autos={autos} />}
             {tab === 'autos' && <AutoLijst autos={autos} opslaan={opslaan} verwijder={verwijder} />}
             {tab === 'verdeling' && <Verdeling autos={autos} opslaan={opslaan} />}
-            {tab === 'calculator' && <Calculator />}
+            {tab === 'calculator' && <Calculator autos={autos} />}
             {tab === 'instellingen' && <Instellingen autos={autos} email={email} importeer={importeer} />}
           </>
         )}
