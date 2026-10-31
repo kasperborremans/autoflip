@@ -3,6 +3,7 @@ import type { Auto, Betaler, Kost, Status } from '../types'
 import { STATUS_LABELS, STATUSSEN } from '../types'
 import { euro, geinvesteerd, totaleKosten, winst } from '../calc'
 import { backend } from '../backend'
+import { bestandenVan } from '../backend/types'
 import { newId, today, verkleinFoto } from '../util'
 import { afrekening, BETALER_LABELS, PARTNERS } from '../verdeling'
 import Foto from './Foto'
@@ -36,26 +37,89 @@ const leeg = (status: Status): Auto => ({
 
 const num = (v: string) => (v === '' ? undefined : Number(v))
 
+const isPdf = (path: string) => path.endsWith('.pdf')
+
+type NieuweKost = { id: string; omschrijving: string; bedrag: string; betaaldDoor: Betaler; bonnetje?: string }
+
 export default function AutoForm({ auto, soort = 'gekocht', onSave, onDelete, onClose }: Props) {
   const [a, setA] = useState<Auto>(auto ?? leeg(soort))
-  const [kost, setKost] = useState<{ omschrijving: string; bedrag: string; betaaldDoor: Betaler }>({ omschrijving: '', bedrag: '', betaaldDoor: 'samen' })
+  const [kost, setKost] = useState<NieuweKost>({ id: newId(), omschrijving: '', bedrag: '', betaaldDoor: 'samen' })
   const [uploaden, setUploaden] = useState(0)
   const [groot, setGroot] = useState<string | null>(null)
+  // Bonnetje in de lightbox, en de kosten waarvoor nu een bonnetje uploadt.
+  const [bon, setBon] = useState<{ kostId: string; path: string } | null>(null)
+  const [bonBezig, setBonBezig] = useState<string[]>([])
   // Foto's worden direct geüpload, maar pas definitief bij Opslaan: bij Annuleren ruimen we nieuwe
   // uploads weer op en verwijderde foto's worden pas na Opslaan echt gewist.
   const nieuweFotos = useRef<string[]>([])
   const verwijderdeFotos = useRef<string[]>([])
   const fotoInput = useRef<HTMLInputElement>(null)
+  const bonInput = useRef<HTMLInputElement>(null)
+  const bonVoor = useRef<string | null>(null)
 
   const set = <K extends keyof Auto>(k: K, v: Auto[K]) => setA((prev) => ({ ...prev, [k]: v }))
 
   function voegKostToe() {
     const bedrag = Number(kost.bedrag)
     if (!kost.omschrijving || !bedrag) return
-    const nieuw: Kost = { id: newId(), omschrijving: kost.omschrijving, bedrag, datum: today(), betaaldDoor: kost.betaaldDoor }
+    const nieuw: Kost = { id: kost.id, omschrijving: kost.omschrijving, bedrag, datum: today(), betaaldDoor: kost.betaaldDoor }
+    if (kost.bonnetje) nieuw.bonnetje = kost.bonnetje
     set('kosten', [...a.kosten, nieuw])
     // De betaler blijft staan: vaak betaalt dezelfde persoon meerdere kosten achter elkaar.
-    setKost({ ...kost, omschrijving: '', bedrag: '' })
+    setKost({ id: newId(), omschrijving: '', bedrag: '', betaaldDoor: kost.betaaldDoor })
+  }
+
+  function verwijderKost(k: Kost) {
+    set('kosten', a.kosten.filter((x) => x.id !== k.id))
+    if (k.bonnetje) verwijderdeFotos.current.push(k.bonnetje)
+  }
+
+  function kiesBonnetje(kostId: string) {
+    bonVoor.current = kostId
+    bonInput.current?.click()
+  }
+
+  async function voegBonnetjeToe(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    const kostId = bonVoor.current
+    e.target.value = ''
+    if (!file || !kostId) return
+    setUploaden((n) => n + 1)
+    setBonBezig((b) => [...b, kostId])
+    try {
+      // Foto's iets groter houden dan autofoto's, zodat de tekst leesbaar blijft. PDF's gaan ongewijzigd.
+      const pdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name)
+      const path = pdf
+        ? await backend.uploadBonnetje(a.id, file, 'pdf')
+        : await backend.uploadBonnetje(a.id, await verkleinFoto(file, 2200), 'jpg')
+      nieuweFotos.current.push(path)
+      // De kost kan inmiddels al toegevoegd zijn; dan komt het bonnetje bij die kost in de lijst.
+      setKost((prev) => (prev.id === kostId ? { ...prev, bonnetje: path } : prev))
+      setA((prev) => ({ ...prev, kosten: prev.kosten.map((k) => (k.id === kostId ? { ...k, bonnetje: path } : k)) }))
+    } catch (err) {
+      alert(`Bonnetje uploaden mislukt: ${(err as Error).message}`)
+    } finally {
+      setUploaden((n) => n - 1)
+      setBonBezig((b) => b.filter((id) => id !== kostId))
+    }
+  }
+
+  function bekijkBonnetje(kostId: string, path: string) {
+    if (isPdf(path)) {
+      // Het tabblad meteen openen (anders blokkeert de browser het) en de link invullen zodra hij er is.
+      const tab = window.open('', '_blank')
+      backend
+        .fotoUrl(path)
+        .then((url) => { if (tab) { tab.opener = null; tab.location.href = url } })
+        .catch((err) => { tab?.close(); alert(`Bonnetje openen mislukt: ${(err as Error).message}`) })
+    }
+    setBon({ kostId, path })
+  }
+
+  function verwijderBonnetje(kostId: string, path: string) {
+    setA((prev) => ({ ...prev, kosten: prev.kosten.map((k) => (k.id === kostId ? { ...k, bonnetje: undefined } : k)) }))
+    verwijderdeFotos.current.push(path)
+    setBon(null)
   }
 
   async function voegFotosToe(e: React.ChangeEvent<HTMLInputElement>) {
@@ -99,20 +163,22 @@ export default function AutoForm({ auto, soort = 'gekocht', onSave, onDelete, on
 
   const sluit = () => afronden(() => { ruimOp(nieuweFotos.current); onClose() })
 
-  const laatste = useRef({ sluit, groot })
-  laatste.current = { sluit, groot }
+  const laatste = useRef({ sluit, groot, bon })
+  laatste.current = { sluit, groot, bon }
   useEffect(() => {
     if (!history.state?.autoflipFormulier) history.pushState({ autoflipFormulier: true }, '')
     const onPop = () => {
-      if (laatste.current.groot) {
-        // Terug sluit eerst de grote foto; het formulier blijft open.
+      if (laatste.current.bon || laatste.current.groot) {
+        // Terug sluit eerst de grote foto of het bonnetje; het formulier blijft open.
+        setBon(null)
         setGroot(null)
         history.pushState({ autoflipFormulier: true }, '')
       } else laatste.current.sluit()
     }
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
-      if (laatste.current.groot) setGroot(null)
+      if (laatste.current.bon) setBon(null)
+      else if (laatste.current.groot) setGroot(null)
       else laatste.current.sluit()
     }
     window.addEventListener('popstate', onPop)
@@ -125,15 +191,19 @@ export default function AutoForm({ auto, soort = 'gekocht', onSave, onDelete, on
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (uploaden) return alert("Wacht tot de foto's geüpload zijn.")
+    if (uploaden) return alert("Wacht tot de foto's en bonnetjes geüpload zijn.")
     const klaar = a.status === 'verkocht' && !a.verkoopdatum ? { ...a, verkoopdatum: today() } : a
-    afronden(() => { ruimOp(verwijderdeFotos.current); onSave(klaar) })
+    // Nieuwe uploads die nergens meer aan hangen (bv. een bonnetje bij een kost die nooit is toegevoegd) ook opruimen.
+    const inGebruik = new Set(bestandenVan(klaar))
+    const los = nieuweFotos.current.filter((p) => !inGebruik.has(p))
+    afronden(() => { ruimOp([...verwijderdeFotos.current, ...los]); onSave(klaar) })
   }
 
   function verwijderAuto() {
     if (!confirm('Deze auto verwijderen?')) return
-    // Alles wat bij deze auto hoort opruimen, ook foto's die nog niet waren opgeslagen.
-    const fotos = [...new Set([...(auto?.fotos ?? []), ...a.fotos, ...verwijderdeFotos.current])]
+    // Alles wat bij deze auto hoort opruimen, ook foto's en bonnetjes die nog niet waren opgeslagen.
+    // De bonnetjes van de huidige kosten wist de backend zelf.
+    const fotos = [...new Set([...(auto ? bestandenVan(auto) : []), ...a.fotos, ...verwijderdeFotos.current, ...nieuweFotos.current])]
     afronden(() => onDelete({ ...a, fotos }))
   }
 
@@ -222,14 +292,26 @@ export default function AutoForm({ auto, soort = 'gekocht', onSave, onDelete, on
           <input ref={fotoInput} type="file" accept="image/*" multiple hidden onChange={voegFotosToe} />
         </div>
 
-        <h3>{oog ? 'Geschatte kosten' : 'Kosten'}</h3>
+        <h3>
+          {oog ? 'Geschatte kosten' : 'Kosten'}
+          {!oog && a.kosten.length > 0 && (
+            <small className="muted bon-telling"> · {a.kosten.filter((k) => k.bonnetje).length}/{a.kosten.length} met bonnetje</small>
+          )}
+        </h3>
         {a.kosten.length > 0 && (
           <ul className="kosten">
             {a.kosten.map((k) => (
               <li key={k.id}>
                 <span>{k.omschrijving}{!oog && <small className="muted"> · {BETALER_LABELS[k.betaaldDoor ?? 'samen']}</small>}</span>
                 <span className="num">{euro(k.bedrag)}</span>
-                <button type="button" className="ghost small" onClick={() => set('kosten', a.kosten.filter((x) => x.id !== k.id))}>✕</button>
+                {bonBezig.includes(k.id) ? (
+                  <button type="button" className="ghost small" disabled aria-label="Bonnetje uploadt">⏳</button>
+                ) : k.bonnetje ? (
+                  <button type="button" className="ghost small" onClick={() => bekijkBonnetje(k.id, k.bonnetje!)} aria-label="Bonnetje bekijken" title="Bonnetje bekijken">🧾</button>
+                ) : (
+                  !oog && <button type="button" className="ghost small muted" onClick={() => kiesBonnetje(k.id)} aria-label="Bonnetje toevoegen" title="Bonnetje toevoegen">📎</button>
+                )}
+                <button type="button" className="ghost small" onClick={() => verwijderKost(k)} aria-label="Kost verwijderen">✕</button>
               </li>
             ))}
           </ul>
@@ -237,10 +319,28 @@ export default function AutoForm({ auto, soort = 'gekocht', onSave, onDelete, on
         <div className="kost-add">
           <input placeholder="bv. remblokken, APK, poetsen" value={kost.omschrijving} onChange={(e) => setKost({ ...kost, omschrijving: e.target.value })} />
           <input type="number" inputMode="numeric" placeholder="€" value={kost.bedrag} onChange={(e) => setKost({ ...kost, bedrag: e.target.value })} />
-          {!oog && (
-            <Keuze klein label="Kosten betaald door" waarde={kost.betaaldDoor} opties={BETALERS} onChange={(b) => setKost({ ...kost, betaaldDoor: b })} />
+          {oog ? (
+            <button type="button" className="ghost" onClick={voegKostToe}>Toevoegen</button>
+          ) : (
+            <>
+              <Keuze klein label="Kosten betaald door" waarde={kost.betaaldDoor} opties={BETALERS} onChange={(b) => setKost({ ...kost, betaaldDoor: b })} />
+              <div className="kost-add-acties">
+                {bonBezig.includes(kost.id) ? (
+                  <span className="badge">⏳ Bonnetje uploaden…</span>
+                ) : kost.bonnetje ? (
+                  <span className="badge bon-label">
+                    🧾 {isPdf(kost.bonnetje) ? 'PDF' : 'Foto'} klaar
+                    <button type="button" className="ghost small" onClick={() => setKost({ ...kost, bonnetje: undefined })} aria-label="Bonnetje weghalen">✕</button>
+                  </span>
+                ) : (
+                  <button type="button" className="ghost" onClick={() => kiesBonnetje(kost.id)}>📎 Bonnetje</button>
+                )}
+                <span className="spacer" />
+                <button type="button" className="ghost" onClick={voegKostToe}>Toevoegen</button>
+              </div>
+            </>
           )}
-          <button type="button" className="ghost" onClick={voegKostToe}>Toevoegen</button>
+          <input ref={bonInput} type="file" accept="image/*,application/pdf" hidden onChange={voegBonnetjeToe} />
         </div>
 
         <Field label="Notities"><textarea rows={3} value={a.notities} onChange={(e) => set('notities', e.target.value)} /></Field>
@@ -268,7 +368,7 @@ export default function AutoForm({ auto, soort = 'gekocht', onSave, onDelete, on
           )}
           <span className="spacer" />
           <button type="button" className="ghost alleen-desktop" onClick={sluit}>Annuleren</button>
-          <button type="submit" className="opslaan" disabled={uploaden > 0}>{uploaden > 0 ? "Foto's uploaden…" : 'Opslaan'}</button>
+          <button type="submit" className="opslaan" disabled={uploaden > 0}>{uploaden > 0 ? 'Uploaden…' : 'Opslaan'}</button>
         </div>
       </form>
 
@@ -282,8 +382,36 @@ export default function AutoForm({ auto, soort = 'gekocht', onSave, onDelete, on
           </div>
         </div>
       )}
+
+      {bon && (
+        <div className="lightbox" onClick={(e) => { e.stopPropagation(); setBon(null) }}>
+          {isPdf(bon.path) ? (
+            <div className="card bon-pdf" onClick={(e) => e.stopPropagation()}>
+              <span>📄 PDF-bonnetje</span>
+              <PdfLink path={bon.path} />
+            </div>
+          ) : (
+            <Foto path={bon.path} className="lightbox-img" />
+          )}
+          <div className="lightbox-acties" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="danger" onClick={() => verwijderBonnetje(bon.kostId, bon.path)}>Bonnetje verwijderen</button>
+            <button type="button" className="ghost" onClick={() => setBon(null)}>Sluiten</button>
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+/** Link om een PDF-bonnetje (opnieuw) te openen, voor als de browser het nieuwe tabblad tegenhield. */
+function PdfLink({ path }: { path: string }) {
+  const [url, setUrl] = useState<string>()
+  useEffect(() => {
+    let actief = true
+    backend.fotoUrl(path).then((u) => actief && setUrl(u)).catch(() => {})
+    return () => { actief = false }
+  }, [path])
+  return url ? <a className="knop" href={url} target="_blank" rel="noreferrer">Openen</a> : <span className="muted">Laden…</span>
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {

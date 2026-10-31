@@ -1,6 +1,6 @@
 import type { Auto } from '../types'
 import { newId } from '../util'
-import { normaliseer, type Backend } from './types'
+import { BONNETJE_TYPE, bestandenVan, bonnetjePad, normaliseer, type Backend } from './types'
 
 const KEY = 'autoflip.autos.v1'
 
@@ -54,11 +54,18 @@ export const localBackend: Backend = {
   },
   async remove(auto) {
     schrijf(lees().filter((a) => a.id !== auto.id))
-    await this.deleteFotos(auto.fotos)
+    await this.deleteFotos(bestandenVan(normaliseer(auto)))
   },
   async uploadFoto(autoId, foto) {
     const path = `${autoId}/${newId()}.jpg`
     await fotoStore('readwrite', (s) => s.put(foto, path))
+    return path
+  },
+  async uploadBonnetje(autoId, bestand, soort) {
+    const path = bonnetjePad(autoId, soort)
+    // Het juiste type meegeven, zodat een PDF ook als PDF opent.
+    const blob = bestand.type === BONNETJE_TYPE[soort] ? bestand : new Blob([bestand], { type: BONNETJE_TYPE[soort] })
+    await fotoStore('readwrite', (s) => s.put(blob, path))
     return path
   },
   async deleteFotos(paths) {
