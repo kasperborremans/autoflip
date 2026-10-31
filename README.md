@@ -6,6 +6,7 @@ Auto's flippen met Lenno — een web-app om de auto's die we kopen, opknappen en
 
 - **Overzicht** — gerealiseerde winst, kapitaal in voorraad, verwachte winst, gemiddelde winst en doorlooptijd per auto.
 - **Auto's** — per auto aankoopprijs, kosten (reparaties, APK, poetsen…), vraag-/verkoopprijs, status, notities en foto's.
+- **Bonnetjes** — koppel aan elke kost een bonnetje: maak er met je telefoon direct een foto van (verkleind, maar goed leesbaar) of kies een PDF. Tik op 🧾 om het te bekijken (een PDF opent in een nieuw tabblad) of 📎 om er alsnog een toe te voegen. Bij de kop staat hoeveel kosten al een bonnetje hebben, bv. *Kosten · 3/5 met bonnetje*, zodat je ziet wat nog ontbreekt. Bonnetjes worden mee opgeslagen bij de foto's en verdwijnen als je de kost of de auto verwijdert.
 - **Foto's** — meerdere foto's per auto (ook direct met je telefooncamera), automatisch verkleind; kies zelf de hoofdfoto.
 - **Calculator** — bereken vóór aankoop of een auto de moeite waard is en wat je maximaal kunt bieden. Vul merk, model, bouwjaar en km-stand in en je krijgt advies: verkoopt hij snel of traag, welke problemen komen vaak voor en waar moet je op letten bij de bezichtiging.
 - **Marktprijs in België** — vul ook motor en vermogen in en open de kant-en-klare zoekopdracht op AutoScout24.be of 2dehands.be. Plak de vraagprijzen van vergelijkbare auto's en de app schat de verkoopprijs (middelste vraagprijs, gecorrigeerd voor km-stand en onderhandelingsmarge) en vult die in de calculator in.

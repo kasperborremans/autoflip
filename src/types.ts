@@ -20,6 +20,8 @@ export interface Kost {
   bedrag: number
   datum: string
   betaaldDoor?: Betaler
+  /** Opslagpad van het bonnetje (foto of PDF). */
+  bonnetje?: string
 }
 
 export interface Auto {

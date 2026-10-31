@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Auto, Betaler } from '../types'
 import { newId } from '../util'
-import { normaliseer, type Backend } from './types'
+import { BONNETJE_TYPE, bestandenVan, bonnetjePad, normaliseer, type Backend } from './types'
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
@@ -106,11 +106,16 @@ export function supabaseBackend(): Backend {
     },
     async remove(auto) {
       check(await sb.from('autos').delete().eq('id', auto.id))
-      await this.deleteFotos(auto.fotos)
+      await this.deleteFotos(bestandenVan(normaliseer(auto)))
     },
     async uploadFoto(autoId, foto) {
       const path = `${autoId}/${newId()}.jpg`
       check(await sb.storage.from(BUCKET).upload(path, foto, { contentType: 'image/jpeg' }))
+      return path
+    },
+    async uploadBonnetje(autoId, bestand, soort) {
+      const path = bonnetjePad(autoId, soort)
+      check(await sb.storage.from(BUCKET).upload(path, bestand, { contentType: BONNETJE_TYPE[soort] }))
       return path
     },
     async deleteFotos(paths) {
